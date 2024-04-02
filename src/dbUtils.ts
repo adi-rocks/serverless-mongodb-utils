@@ -4,7 +4,6 @@ import { auditRecord } from './audit/audit'
 
 const url = process.env.MONGODB_URL ?? ''
 const dbName = process.env.MONGODB_DB_NAME ?? ''
-
 let cachedDb: Db | null = null
 
 // connect to db
@@ -119,6 +118,12 @@ export const save = async <T extends Document & { _id?: any }>(collectionName: s
   }
 
   return document
+}
+
+export const countDocuments = async (collectionName: string, query?: Record<string, unknown>): Promise<number> => {
+  const collection = await getCollection(collectionName)
+  const count = await collection.countDocuments({ ...query })
+  return count
 }
 
 export const getUserLogin = (): any => {
