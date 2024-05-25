@@ -1,6 +1,6 @@
 {
   "name": "serverless-mongodb-utils",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Utility functions for MongoDB",
   "main": "dist/index.js",
   "scripts": {
