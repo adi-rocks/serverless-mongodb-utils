@@ -63,29 +63,28 @@ export const find = async <T extends Document>(collectionName: string, query: Re
   return documents
 }
 
-export const deleteOne = async (collectionName: string, query?: Record<string, unknown>): Promise<void> => {
+export const runAggregation = async <T extends Document>(collectionName: string, pipeline: object[]): Promise<T[]> => {
   const collection = await getCollection(collectionName)
-  await collection.deleteOne(query ?? {})
-  const userLogin = getUserLogin()
-  await auditRecord(userLogin.user._id, userLogin.user.email, 'DELETE', JSON.stringify(query), new Date(), collectionName)
+  const result = await collection.aggregate(pipeline).toArray()
+  return result as T[]
 }
 
-export const deleteOneOrFail = async (collectionName: string, query?: Record<string, unknown>): Promise<void> => {
+export const deleteDocuments = async (collectionName: string, query?: Record<string, unknown> | string[], failIfNoMatch: boolean = false): Promise<void> => {
   const collection = await getCollection(collectionName)
-  const deleteResult = await collection.deleteOne(query ?? {})
-  const userLogin = getUserLogin()
-  await auditRecord(userLogin.user._id, userLogin.user.email, 'DELETE', JSON.stringify(query), new Date(), collectionName)
+  let deleteResult
 
-  if (deleteResult.deletedCount === 0) {
-    throw new Error('No document matches the provided query')
+  if (Array.isArray(query)) {
+    deleteResult = await collection.deleteMany({ _id: { $in: query.map(id => new ObjectId(id)) } })
+  } else {
+    deleteResult = await collection.deleteOne(query ?? {})
   }
-}
 
-export const deleteByIds = async (collectionName: string, ids: string[]): Promise<void> => {
-  const collection = await getCollection(collectionName)
-  await collection.deleteMany({ _id: { $in: ids.map(id => new ObjectId(id)) } })
   const userLogin = getUserLogin()
-  await auditRecord(userLogin.user._id, userLogin.user.email, 'DELETE', ids.join(','), new Date(), collectionName)
+  await auditRecord(userLogin.user._id, userLogin.user.email, 'DELETE', JSON.stringify(query), new Date(), collectionName)
+
+  if (failIfNoMatch && deleteResult.deletedCount === 0) {
+    throw new Error('NO_MATCH' + JSON.stringify(query))
+  }
 }
 
 // save a document
